@@ -30,15 +30,16 @@ import javax.ws.rs.core.Response;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 
-import lombok.extern.slf4j.Slf4j;;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Servlet implementation class RedirectServlet
  */
 // @WebServlet("/RedirectServlet")
 @Slf4j
-public class RedirectServlet extends HttpServlet {
-    private static final long serialVersionUID = -4054957515370180691L;
+public class RedirectServlet2 extends HttpServlet {
+
+    private static final long serialVersionUID = -3553913836730655942L;
 
     private ResourceBundle bundle = null;
 
@@ -47,7 +48,7 @@ public class RedirectServlet extends HttpServlet {
     @Override
     public void init(ServletConfig config) throws ServletException {
         super.init(config);
-        String propertyFile = "settings";
+        String propertyFile = "settings2";
         try {
             bundle = ResourceBundle.getBundle(propertyFile);
             doSettings(bundle);
@@ -86,9 +87,10 @@ public class RedirectServlet extends HttpServlet {
                 .getParameter(PARAM_AUTHORIZATION_CODE);
 
         if (authorizationCode == null) {
+
             // Authorization Codeの取得開始。
             String oauth_server_url_format = oauth_server
-                    + "/api/authorization?"//
+                    + "/yconnect/v2/authorization?" //
                     + "client_id=%1s&" //
                     + "redirect_uri=%2s&" //
                     + "state=%3s&" //
@@ -127,7 +129,8 @@ public class RedirectServlet extends HttpServlet {
             // CSRF対策のための、パラメタから取得したヤツと、Sessionにあるヤツの値を確認
             checkCSRF(request);
 
-            String path = "/api/token";
+            String path = "/yconnect/v2/token";
+
             String result = getAccessTokenJSON(oauth_server, path, redirect_url,
                     client_id, client_secret, authorizationCode);
 
@@ -149,18 +152,20 @@ public class RedirectServlet extends HttpServlet {
                 log.debug("Resource Server:{}", resource_server);
                 Response resourceResponse = ClientBuilder.newClient() //
                         .target(resource_server) //
-                        // .path("/api/country/JP") //
-                        .path("/api/userinfo") //
+                        .path("/yconnect/v2/attribute") //
+                        .queryParam("schema", "openid")//
                         .request(MediaType.APPLICATION_JSON_TYPE)
                         .header("Authorization",
                                 "Bearer " + map.get("access_token").toString())
                         .get();
-                out.append(toPrettyStr(
+
+                response.getWriter().append(toPrettyStr(
                         json2Map(resourceResponse.readEntity(String.class))));
 
             } catch (BadRequestException e) {
                 throw new ServletException(e);
             }
+
         }
     }
 
