@@ -16,5 +16,14 @@
     <url-pattern>/RedirectServlet</url-pattern>
   </servlet-mapping>
 
+  <servlet>
+    <servlet-name>RedirectServlet2</servlet-name>
+    <servlet-class>nu.mine.kino.RedirectServlet2</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>RedirectServlet2</servlet-name>
+    <url-pattern>/RedirectServlet2</url-pattern>
+  </servlet-mapping>
+
 
 </web-app>
