@@ -15,12 +15,22 @@ package nu.mine.kino.utils;
 import static nu.mine.kino.Constants.PARAM_STATE;
 import static nu.mine.kino.Constants.SESSION_STATE;
 
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.util.Enumeration;
 
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.X509TrustManager;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import javax.ws.rs.BadRequestException;
+import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MediaType;
@@ -31,6 +41,8 @@ import javax.ws.rs.core.Response.StatusType;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.glassfish.jersey.apache.connector.ApacheConnectorProvider;
+import org.glassfish.jersey.client.ClientConfig;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -141,7 +153,7 @@ public class Utils {
             Response restResponse = ClientBuilder.newClient() //
                     .target(oauth_server) //
                     .path(path) //
-                    .request(MediaType.APPLICATION_XML_TYPE)
+                    .request(MediaType.APPLICATION_JSON_TYPE)
                     .post(Entity.entity(formParams,
                             MediaType.APPLICATION_FORM_URLENCODED_TYPE));
 
@@ -153,5 +165,69 @@ public class Utils {
             throw new ServletException(e);
         }
         return result;
+    }
+
+    public static Client createClient() {
+        return ClientBuilder.newClient();
+    }
+
+    public static Client createSecureClient() {
+        String proxyHost = "http://127.0.0.1:8080";
+        ClientConfig config = new ClientConfig();
+
+        // providerをproxy対応?にする
+        config.connectorProvider(new ApacheConnectorProvider());
+        // config.property(ClientProperties.PROXY_URI, proxyHost);
+        // config.property(ClientProperties.PROXY_USERNAME, "userName");
+        // config.property(ClientProperties.PROXY_PASSWORD, "password");
+
+        SSLContext sslContext = createSSLContext();
+        HostnameVerifier hostnameVerifier = createHostNameVerifier();
+
+        // builderの生成
+        ClientBuilder b = ClientBuilder.newBuilder().withConfig(config)
+                .sslContext(sslContext).hostnameVerifier(hostnameVerifier);
+        return b.build();
+    }
+
+    public static SSLContext createSSLContext() {
+        SSLContext sslContext = null;
+        try {
+            sslContext = SSLContext.getInstance("TLS");
+            sslContext.init(null,
+                    new X509TrustManager[] { new X509TrustManager() {
+                        @Override
+                        public void checkClientTrusted(X509Certificate[] chain,
+                                String authType) throws CertificateException {
+                        }
+
+                        @Override
+                        public void checkServerTrusted(X509Certificate[] chain,
+                                String authType) throws CertificateException {
+                        }
+
+                        @Override
+                        public X509Certificate[] getAcceptedIssuers() {
+                            return new X509Certificate[0];
+                        }
+                    } }, new SecureRandom());
+            // HttpsURLConnection
+            // .setDefaultSSLSocketFactory(sslContext.getSocketFactory());
+
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (KeyManagementException e) {
+            e.printStackTrace();
+        }
+        return sslContext;
+    }
+
+    public static HostnameVerifier createHostNameVerifier() {
+        return new HostnameVerifier() {
+            @Override
+            public boolean verify(String hostname, SSLSession session) {
+                return true;
+            }
+        };
     }
 }
