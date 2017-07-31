@@ -6,9 +6,11 @@ import static nu.mine.kino.utils.JSONUtils.json2Map;
 import static nu.mine.kino.utils.JSONUtils.toPrettyStr;
 import static nu.mine.kino.utils.Utils.base64DecodeStr;
 import static nu.mine.kino.utils.Utils.checkCSRF;
+import static nu.mine.kino.utils.Utils.checkIdToken;
 import static nu.mine.kino.utils.Utils.getAccessTokenJSON;
 import static nu.mine.kino.utils.Utils.getRandomString;
 import static nu.mine.kino.utils.Utils.getRequestURL;
+import static nu.mine.kino.utils.Utils.getResource;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -24,9 +26,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import javax.ws.rs.BadRequestException;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+
+import org.apache.commons.lang3.StringUtils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 
@@ -47,7 +48,7 @@ public class RedirectServlet extends HttpServlet {
     @Override
     public void init(ServletConfig config) throws ServletException {
         super.init(config);
-        String propertyFile = "settings";
+        String propertyFile = getServletConfig().getInitParameter("property");
         try {
             bundle = ResourceBundle.getBundle(propertyFile);
             doSettings(bundle);
@@ -79,7 +80,9 @@ public class RedirectServlet extends HttpServlet {
 
         String client_id = bundle.getString("client_id");
         String client_secret = bundle.getString("client_secret");
-        String oauth_server = bundle.getString("oauth_server");
+        String authorization_endpoint = bundle
+                .getString("authorization_endpoint");
+        String token_endpoint = bundle.getString("token_endpoint");
         String resource_server = bundle.getString("resource_server");
 
         String authorizationCode = request
@@ -87,21 +90,22 @@ public class RedirectServlet extends HttpServlet {
 
         if (authorizationCode == null) {
             // Authorization Codeの取得開始。
-            String oauth_server_url_format = oauth_server
-                    + "/api/authorization?"//
-                    + "client_id=%1s&" //
-                    + "redirect_uri=%2s&" //
-                    + "state=%3s&" //
-                    + "nonce=%4s&" //
-                    + "response_type=%5s&"//
-                    + "scope=%6s";
+
+            String oauth_server_url_format = authorization_endpoint //
+                    + "?" //
+                    + "client_id=%1$s&" //
+                    + "redirect_uri=%2$s&" //
+                    + "state=%3$s&" //
+                    + "nonce=%4$s&" //
+                    + "response_type=%5$s&"//
+                    + "scope=%6$s";
 
             // CSRF対策のための、stateを設定
             String state = getRandomString();
 
             String nonce = getRandomString();
             String response_type = "code";
-            String scope = "openid+profile";
+            String scope = "openid+profile+email";
 
             String oauth_server_url = String.format(oauth_server_url_format,
                     client_id, //
@@ -127,36 +131,37 @@ public class RedirectServlet extends HttpServlet {
             // CSRF対策のための、パラメタから取得したヤツと、Sessionにあるヤツの値を確認
             checkCSRF(request);
 
-            String path = "/api/token";
-            String result = getAccessTokenJSON(oauth_server, path, redirect_url,
+            String result = getAccessTokenJSON(token_endpoint, redirect_url,
                     client_id, client_secret, authorizationCode);
 
             try {
-                response.setContentType("text/plain;charset=UTF-8");
 
                 Map<String, Object> map = json2Map(result);
-                log.debug("access_token: {}", map.get("access_token"));
-                log.debug("refresh_token: {}", map.get("refresh_token"));
-                log.debug("id_token: {}", map.get("id_token"));
+                String accessToken = (String) map.get("access_token");
+                String id_token = (String) map.get("id_token");
 
+                log.debug("access_token: {}", accessToken);
+                log.debug("refresh_token: {}", map.get("refresh_token"));
+                log.debug("id_token: {}", id_token);
+
+                response.setContentType("text/plain;charset=UTF-8");
                 PrintWriter out = response.getWriter();
                 out.append(toPrettyStr(map));
                 out.append("\n\n");
 
-                String id_token = (String) map.get("id_token");
-                checkIdToken(id_token, out);
+                if (StringUtils.isNotEmpty(id_token)) {
+                    printIdToken(id_token, out);
+                    checkIdToken(id_token);
+                }
+
+                // OpenIDなどで、ユーザ情報などを取りに行くresourceサーバがない場合はコレでおしまい。
+                if (StringUtils.isEmpty(resource_server)) {
+                    return;
+                }
 
                 log.debug("Resource Server:{}", resource_server);
-                Response resourceResponse = ClientBuilder.newClient() //
-                        .target(resource_server) //
-                        // .path("/api/country/JP") //
-                        .path("/api/userinfo") //
-                        .request(MediaType.APPLICATION_JSON_TYPE)
-                        .header("Authorization",
-                                "Bearer " + map.get("access_token").toString())
-                        .get();
-                out.append(toPrettyStr(
-                        json2Map(resourceResponse.readEntity(String.class))));
+                String userInfoJSON = getResource(resource_server, accessToken);
+                out.append(toPrettyStr(json2Map(userInfoJSON)));
 
             } catch (BadRequestException e) {
                 throw new ServletException(e);
@@ -164,8 +169,9 @@ public class RedirectServlet extends HttpServlet {
         }
     }
 
-    private void checkIdToken(String id_token, PrintWriter out)
+    private void printIdToken(String id_token, PrintWriter out)
             throws JsonProcessingException, IOException {
+
         String[] id_token_parts = id_token.split("\\.");
 
         String ID_TOKEN_HEADER = base64DecodeStr(id_token_parts[0]);
@@ -183,6 +189,7 @@ public class RedirectServlet extends HttpServlet {
 
         out.append(toPrettyStr(json2Map(ID_TOKEN_PAYLOAD)));
         out.append("\n\n");
+
     }
 
     /**

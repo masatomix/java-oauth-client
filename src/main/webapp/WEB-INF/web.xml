@@ -8,21 +8,56 @@
   version="3.0">
 
   <servlet>
-    <servlet-name>RedirectServlet</servlet-name>
+    <servlet-name>RedirectServlet1</servlet-name>
     <servlet-class>nu.mine.kino.RedirectServlet</servlet-class>
+    <init-param>
+        <param-name>property</param-name>
+        <param-value>settings1</param-value>
+    </init-param>
   </servlet>
   <servlet-mapping>
-    <servlet-name>RedirectServlet</servlet-name>
-    <url-pattern>/RedirectServlet</url-pattern>
+    <servlet-name>RedirectServlet1</servlet-name>
+    <url-pattern>/RedirectServlet1</url-pattern>
   </servlet-mapping>
 
   <servlet>
     <servlet-name>RedirectServlet2</servlet-name>
-    <servlet-class>nu.mine.kino.RedirectServlet2</servlet-class>
+    <servlet-class>nu.mine.kino.RedirectServlet</servlet-class>
+    <init-param>
+        <param-name>property</param-name>
+        <param-value>settings2</param-value>
+    </init-param>
   </servlet>
   <servlet-mapping>
     <servlet-name>RedirectServlet2</servlet-name>
     <url-pattern>/RedirectServlet2</url-pattern>
+  </servlet-mapping>
+
+
+  <servlet>
+    <servlet-name>RedirectServlet3</servlet-name>
+    <servlet-class>nu.mine.kino.RedirectServlet</servlet-class>
+    <init-param>
+        <param-name>property</param-name>
+        <param-value>settings3</param-value>
+    </init-param>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>RedirectServlet3</servlet-name>
+    <url-pattern>/RedirectServlet3</url-pattern>
+  </servlet-mapping>
+
+  <servlet>
+    <servlet-name>RedirectServlet4</servlet-name>
+    <servlet-class>nu.mine.kino.RedirectServlet</servlet-class>
+    <init-param>
+        <param-name>property</param-name>
+        <param-value>settings4</param-value>
+    </init-param>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>RedirectServlet4</servlet-name>
+    <url-pattern>/RedirectServlet4</url-pattern>
   </servlet-mapping>
 
 
