@@ -146,6 +146,7 @@ public class RedirectServlet extends HttpServlet {
 
                 response.setContentType("text/plain;charset=UTF-8");
                 PrintWriter out = response.getWriter();
+                out.append("AccessToken: \n");
                 out.append(toPrettyStr(map));
                 out.append("\n\n");
 
@@ -161,6 +162,7 @@ public class RedirectServlet extends HttpServlet {
 
                 log.debug("Resource Server:{}", resource_server);
                 String userInfoJSON = getResource(resource_server, accessToken);
+                out.append("User Information: \n");
                 out.append(toPrettyStr(json2Map(userInfoJSON)));
 
             } catch (BadRequestException e) {
@@ -184,9 +186,11 @@ public class RedirectServlet extends HttpServlet {
 
         // ホントはPAYLOADの nonce値とSessionのnonce値の一致チェックが必要。まだやってない。
 
+        out.append("OpenID ID TOKEN HEADER: \n");
         out.append(toPrettyStr(json2Map(ID_TOKEN_HEADER)));
         out.append("\n\n");
 
+        out.append("OpenID ID TOKEN PAYLOAD: \n");
         out.append(toPrettyStr(json2Map(ID_TOKEN_PAYLOAD)));
         out.append("\n\n");
 
