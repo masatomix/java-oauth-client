@@ -9,6 +9,17 @@
 	<name>Java OAuth Client Sample WebApp</name>
 	<url>http://maven.apache.org</url>
 
+	<repositories>
+		<repository>
+			<id>my-maven-repo</id>
+			<url>https://raw.github.com/masatomix/maven-repo/maven-repo/</url>
+			<snapshots>
+				<enabled>true</enabled>
+				<updatePolicy>always</updatePolicy>
+			</snapshots>
+		</repository>
+	</repositories>
+
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<javax.servlet-api.version>3.1.0</javax.servlet-api.version>
@@ -20,6 +31,12 @@
 	</properties>
 
 	<dependencies>
+		<dependency>
+			<groupId>nu.mine.kino</groupId>
+			<artifactId>utils</artifactId>
+			<version>0.1.0</version>
+		</dependency>
+
 		<dependency>
 			<groupId>javax.servlet</groupId>
 			<artifactId>javax.servlet-api</artifactId>
