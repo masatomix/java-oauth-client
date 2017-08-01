@@ -12,8 +12,7 @@
 
 package nu.mine.kino.utils;
 
-import static nu.mine.kino.Constants.PARAM_STATE;
-import static nu.mine.kino.Constants.SESSION_STATE;
+import static nu.mine.kino.Constants.*;
 
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
@@ -135,7 +134,7 @@ public class Utils {
         }
     }
 
-    public static String getAccessTokenJSON(String oauth_server, String path,
+    public static String getAccessTokenJSON(String oauth_server,
             String redirect_url, String client_id, String client_secret,
             String authorizationCode) throws ServletException {
         String grant_type = "authorization_code";
@@ -152,7 +151,6 @@ public class Utils {
             log.debug("OAuthServer:{}", oauth_server);
             Response restResponse = ClientBuilder.newClient() //
                     .target(oauth_server) //
-                    .path(path) //
                     .request(MediaType.APPLICATION_JSON_TYPE)
                     .post(Entity.entity(formParams,
                             MediaType.APPLICATION_FORM_URLENCODED_TYPE));
@@ -164,6 +162,33 @@ public class Utils {
         } catch (BadRequestException e) {
             throw new ServletException(e);
         }
+        return result;
+    }
+
+    public static String getResource(String resource_server,
+            String accessToken) {
+
+        Client client = createSecureClient();
+        // Client client = createClient();
+
+        // MultivaluedHashMap<String, String> formParams = new
+        // MultivaluedHashMap<String, String>();
+        // Response restResponse = client.target(usersUrl)
+        // .request(MediaType.APPLICATION_JSON_TYPE)
+        // .header("Authorization", "token " + accessToken)
+        // .post(Entity.entity(formParams,
+        // MediaType.APPLICATION_FORM_URLENCODED_TYPE));
+        //
+        // System.out.println(restResponse.readEntity(String.class));
+
+        log.debug("Resource Server:{}", resource_server);
+        Response restResponse = client.target(resource_server)
+                .queryParam("schema", "openid")//
+                .request(MediaType.APPLICATION_JSON_TYPE)
+                .header("Authorization", "Bearer " + accessToken).get();
+
+        String result = restResponse.readEntity(String.class);
+        log.debug(result);
         return result;
     }
 
@@ -230,4 +255,20 @@ public class Utils {
             }
         };
     }
+
+    public static void checkIdToken(String id_token) throws ServletException {
+        String[] id_token_parts = id_token.split("\\.");
+
+        String ID_TOKEN_HEADER = base64DecodeStr(id_token_parts[0]);
+        String ID_TOKEN_PAYLOAD = base64DecodeStr(id_token_parts[1]);
+        // String ID_TOKEN_SIGNATURE =
+        // base64DecodeStr(id_token_parts[2]);
+        log.debug("ID_TOKEN_HEADER: {}", ID_TOKEN_HEADER);
+        log.debug("ID_TOKEN_PAYLOAD: {}", ID_TOKEN_PAYLOAD);
+        // log.debug("ID_TOKEN_SIGNATURE: {}", ID_TOKEN_SIGNATURE);
+
+        // ホントはPAYLOADの nonce値とSessionのnonce値の一致チェックが必要。まだやってない。
+
+    }
+
 }
