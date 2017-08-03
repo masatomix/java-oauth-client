@@ -84,6 +84,7 @@ public class RedirectServlet extends HttpServlet {
                 .getString("authorization_endpoint");
         String token_endpoint = bundle.getString("token_endpoint");
         String userinfo_endpoint = bundle.getString("userinfo_endpoint");
+        String jwks_uri = bundle.getString("jwks_uri");
 
         String authorizationCode = request
                 .getParameter(PARAM_AUTHORIZATION_CODE);
@@ -148,13 +149,14 @@ public class RedirectServlet extends HttpServlet {
                 PrintWriter out = response.getWriter();
                 out.append("AccessToken: \n");
                 out.append(toPrettyStr(map));
-                out.append("\n\n");
 
                 // OpenID Connect対応でないと、id_tokenが返ってこない場合もある。
                 if (StringUtils.isNotEmpty(id_token)) {
                     printIdToken(id_token, out);
-                    checkIdToken(id_token);
+                    boolean checkResult = checkIdToken(id_token, jwks_uri);
+                    out.append("署名検証結果: " + checkResult);
                 }
+                out.append("\n\n");
 
                 // OAuth2.0のみのアプリだと、明確にuserinfo_endpointがない場合もありそう
                 if (StringUtils.isNotEmpty(userinfo_endpoint)) {

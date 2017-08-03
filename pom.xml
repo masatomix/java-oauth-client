@@ -7,18 +7,28 @@
 	<packaging>war</packaging>
 	<version>1.1-SNAPSHOT</version>
 	<name>Java OAuth Client Sample WebApp</name>
-	<url>http://maven.apache.org</url>
+	<url>https://github.com/masatomix/java-oauth-client</url>
 
-	<repositories>
-		<repository>
-			<id>my-maven-repo</id>
-			<url>https://raw.github.com/masatomix/maven-repo/maven-repo/</url>
-			<snapshots>
-				<enabled>true</enabled>
-				<updatePolicy>always</updatePolicy>
-			</snapshots>
-		</repository>
-	</repositories>
+	<licenses>
+		<license>
+			<name>The Apache Software License, Version 2.0</name>
+			<url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+		</license>
+	</licenses>
+
+	<developers>
+		<developer>
+			<email>masatomix@ki-no.org</email>
+			<name>Masatomi KINO</name>
+			<url>https://github.com/masatomix</url>
+			<id>masatomix</id>
+		</developer>
+	</developers>
+	<scm>
+		<url>https://github.com/masatomix/utils</url>
+		<connection>scm:git:https://github.com/masatomix/java-oauth-client.git</connection>
+		<developerConnection>scm:git:https://github.com/masatomix/java-oauth-client.git</developerConnection>
+	</scm>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -34,7 +44,7 @@
 		<dependency>
 			<groupId>nu.mine.kino</groupId>
 			<artifactId>utils</artifactId>
-			<version>0.1.1</version>
+			<version>0.1.2</version>
 		</dependency>
 
 		<dependency>
@@ -144,10 +154,17 @@
 			<artifactId>jackson-annotations</artifactId>
 			<version>2.7.4</version>
 		</dependency>
-
-
 	</dependencies>
-
+	<repositories>
+		<repository>
+			<id>my-maven-repo</id>
+			<url>https://raw.github.com/masatomix/maven-repo/maven-repo/</url>
+			<snapshots>
+				<enabled>true</enabled>
+				<updatePolicy>always</updatePolicy>
+			</snapshots>
+		</repository>
+	</repositories>
 	<build>
 		<plugins>
 			<plugin>
