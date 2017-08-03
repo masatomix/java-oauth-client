@@ -204,6 +204,16 @@
 					</execution>
 				</executions>
 			</plugin>
+			<plugin>
+				<groupId>com.amashchenko.maven.plugin</groupId>
+				<artifactId>gitflow-maven-plugin</artifactId>
+				<version>1.5.0</version>
+				<configuration>
+					<pushRemote>false</pushRemote>
+					<!-- optional configuration -->
+				</configuration>
+			</plugin>
+
 		</plugins>
 	</build>
 
