@@ -5,7 +5,7 @@
 	<groupId>nu.mine.kino</groupId>
 	<artifactId>java-oauth-client</artifactId>
 	<packaging>war</packaging>
-	<version>1.0-SNAPSHOT</version>
+	<version>1.0</version>
 	<name>Java OAuth Client Sample WebApp</name>
 	<url>http://maven.apache.org</url>
 
@@ -34,7 +34,7 @@
 		<dependency>
 			<groupId>nu.mine.kino</groupId>
 			<artifactId>utils</artifactId>
-			<version>0.1.0</version>
+			<version>0.1.1</version>
 		</dependency>
 
 		<dependency>
@@ -204,6 +204,16 @@
 					</execution>
 				</executions>
 			</plugin>
+			<plugin>
+				<groupId>com.amashchenko.maven.plugin</groupId>
+				<artifactId>gitflow-maven-plugin</artifactId>
+				<version>1.5.0</version>
+				<configuration>
+					<pushRemote>false</pushRemote>
+					<!-- optional configuration -->
+				</configuration>
+			</plugin>
+
 		</plugins>
 	</build>
 
