@@ -83,7 +83,7 @@ public class RedirectServlet extends HttpServlet {
         String authorization_endpoint = bundle
                 .getString("authorization_endpoint");
         String token_endpoint = bundle.getString("token_endpoint");
-        String resource_server = bundle.getString("resource_server");
+        String userinfo_endpoint = bundle.getString("userinfo_endpoint");
 
         String authorizationCode = request
                 .getParameter(PARAM_AUTHORIZATION_CODE);
@@ -155,13 +155,13 @@ public class RedirectServlet extends HttpServlet {
                     checkIdToken(id_token);
                 }
 
-                // OpenIDなどで、ユーザ情報などを取りに行くresourceサーバがない場合はコレでおしまい。
-                if (StringUtils.isEmpty(resource_server)) {
+                // OpenIDなどで、ユーザ情報などを取りに行く userinfo_endpoint がない場合はコレでおしまい。
+                if (StringUtils.isEmpty(userinfo_endpoint)) {
                     return;
                 }
 
-                log.debug("Resource Server:{}", resource_server);
-                String userInfoJSON = getResource(resource_server, accessToken);
+                log.debug("Resource Server:{}", userinfo_endpoint);
+                String userInfoJSON = getResource(userinfo_endpoint, accessToken);
                 out.append("User Information: \n");
                 out.append(toPrettyStr(json2Map(userInfoJSON)));
 
