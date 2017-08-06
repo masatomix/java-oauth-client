@@ -155,7 +155,7 @@ public class RedirectServlet extends HttpServlet {
                 // OpenID Connect対応でないと、id_tokenが返ってこない場合もある。
                 if (StringUtils.isNotEmpty(id_token)) {
                     printIdToken(id_token, out);
-                    boolean checkResult = checkIdToken(id_token, jwks_uri);
+                    boolean checkResult = checkIdToken(id_token, jwks_uri,client_secret);
                     out.append("署名検証結果: " + checkResult);
                 }
                 out.append("\n\n");
