@@ -74,6 +74,7 @@ public class RedirectServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request,
             HttpServletResponse response) throws ServletException, IOException {
 
+        
         String redirect_url = getRequestURL(request);
         String encodedRedirectUrl = URLEncoder.encode(redirect_url, "UTF-8");
         log.debug("redirect_url:[{}]", redirect_url);// ココでセットするURLは、通常OAuthサーバ側に登録されているURLでなければならない。
@@ -149,11 +150,12 @@ public class RedirectServlet extends HttpServlet {
                 PrintWriter out = response.getWriter();
                 out.append("AccessToken: \n");
                 out.append(toPrettyStr(map));
+                out.append("\n\n");
 
                 // OpenID Connect対応でないと、id_tokenが返ってこない場合もある。
                 if (StringUtils.isNotEmpty(id_token)) {
                     printIdToken(id_token, out);
-                    boolean checkResult = checkIdToken(id_token, jwks_uri);
+                    boolean checkResult = checkIdToken(id_token, jwks_uri,client_secret);
                     out.append("署名検証結果: " + checkResult);
                 }
                 out.append("\n\n");
