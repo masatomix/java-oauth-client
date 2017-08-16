@@ -4,21 +4,31 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>nu.mine.kino</groupId>
 	<artifactId>java-oauth-client</artifactId>
+	<version>1.1</version>
 	<packaging>war</packaging>
-	<version>1.0</version>
 	<name>Java OAuth Client Sample WebApp</name>
-	<url>http://maven.apache.org</url>
+	<url>https://github.com/masatomix/java-oauth-client</url>
 
-	<repositories>
-		<repository>
-			<id>my-maven-repo</id>
-			<url>https://raw.github.com/masatomix/maven-repo/maven-repo/</url>
-			<snapshots>
-				<enabled>true</enabled>
-				<updatePolicy>always</updatePolicy>
-			</snapshots>
-		</repository>
-	</repositories>
+	<licenses>
+		<license>
+			<name>The Apache Software License, Version 2.0</name>
+			<url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+		</license>
+	</licenses>
+
+	<developers>
+		<developer>
+			<email>masatomix@ki-no.org</email>
+			<name>Masatomi KINO</name>
+			<url>https://github.com/masatomix</url>
+			<id>masatomix</id>
+		</developer>
+	</developers>
+	<scm>
+		<url>https://github.com/masatomix/utils</url>
+		<connection>scm:git:https://github.com/masatomix/java-oauth-client.git</connection>
+		<developerConnection>scm:git:https://github.com/masatomix/java-oauth-client.git</developerConnection>
+	</scm>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -34,7 +44,7 @@
 		<dependency>
 			<groupId>nu.mine.kino</groupId>
 			<artifactId>utils</artifactId>
-			<version>0.1.1</version>
+			<version>0.1.5</version>
 		</dependency>
 
 		<dependency>
@@ -43,45 +53,6 @@
 			<version>${javax.servlet-api.version}</version>
 			<scope>provided</scope>
 		</dependency>
-
-		<dependency>
-			<groupId>org.glassfish.jersey.containers</groupId>
-			<artifactId>jersey-container-servlet</artifactId>
-			<version>${jersey.version}</version>
-		</dependency>
-
-		<dependency>
-			<groupId>org.glassfish.jersey.media</groupId>
-			<artifactId>jersey-media-moxy</artifactId>
-			<version>${jersey.version}</version>
-		</dependency>
-
-		<dependency>
-			<groupId>org.glassfish.jersey.ext</groupId>
-			<artifactId>jersey-mvc</artifactId>
-			<version>${jersey.version}</version>
-		</dependency>
-
-		<dependency>
-			<groupId>org.glassfish.jersey.ext</groupId>
-			<artifactId>jersey-mvc-jsp</artifactId>
-			<version>${jersey.version}</version>
-		</dependency>
-
-
-		<dependency>
-			<groupId>org.glassfish.jersey.core</groupId>
-			<artifactId>jersey-client</artifactId>
-			<version>${jersey.version}</version>
-		</dependency>
-		<!-- jersyでProxyを使う場合。 -->
-		<dependency>
-			<groupId>org.glassfish.jersey.connectors</groupId>
-			<artifactId>jersey-apache-connector</artifactId>
-			<version>${jersey.version}</version>
-		</dependency>
-
-
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
@@ -144,10 +115,17 @@
 			<artifactId>jackson-annotations</artifactId>
 			<version>2.7.4</version>
 		</dependency>
-
-
 	</dependencies>
-
+	<repositories>
+		<repository>
+			<snapshots>
+				<enabled>true</enabled>
+				<updatePolicy>always</updatePolicy>
+			</snapshots>
+			<id>my-maven-repo</id>
+			<url>https://raw.github.com/masatomix/maven-repo/maven-repo/</url>
+		</repository>
+	</repositories>
 	<build>
 		<plugins>
 			<plugin>
@@ -182,7 +160,7 @@
 						<webInfIncludeJarPattern>.*/.*jersey-[^/]\.jar$</webInfIncludeJarPattern>
 					</webApp>
 					<httpConnector>
-						<port>8082</port>
+						<port>8080</port>
 					</httpConnector>
 					<stopPort>9092</stopPort>
 					<stopKey>stop</stopKey>

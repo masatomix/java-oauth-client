@@ -1,16 +1,8 @@
 package nu.mine.kino;
 
-import static nu.mine.kino.Constants.SESSION_NONCE;
-import static nu.mine.kino.Constants.SESSION_STATE;
-import static nu.mine.kino.utils.JSONUtils.json2Map;
-import static nu.mine.kino.utils.JSONUtils.toPrettyStr;
-import static nu.mine.kino.utils.Utils.base64DecodeStr;
-import static nu.mine.kino.utils.Utils.checkCSRF;
-import static nu.mine.kino.utils.Utils.checkIdToken;
-import static nu.mine.kino.utils.Utils.getAccessTokenJSON;
-import static nu.mine.kino.utils.Utils.getRandomString;
-import static nu.mine.kino.utils.Utils.getRequestURL;
-import static nu.mine.kino.utils.Utils.getResource;
+import static nu.mine.kino.Constants.*;
+import static nu.mine.kino.utils.JSONUtils.*;
+import static nu.mine.kino.utils.Utils.*;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -26,12 +18,15 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import javax.ws.rs.BadRequestException;
+import javax.ws.rs.client.Client;
+import javax.ws.rs.core.MediaType;
 
 import org.apache.commons.lang3.StringUtils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 
-import lombok.extern.slf4j.Slf4j;;
+import lombok.extern.slf4j.Slf4j;
+import nu.mine.kino.utils.Utils;;
 
 /**
  * Servlet implementation class RedirectServlet
@@ -74,16 +69,19 @@ public class RedirectServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request,
             HttpServletResponse response) throws ServletException, IOException {
 
-        String redirect_url = getRequestURL(request);
+        String redirect_url = getRedirect_url(request);
         String encodedRedirectUrl = URLEncoder.encode(redirect_url, "UTF-8");
         log.debug("redirect_url:[{}]", redirect_url);// ココでセットするURLは、通常OAuthサーバ側に登録されているURLでなければならない。
 
         String client_id = bundle.getString("client_id");
         String client_secret = bundle.getString("client_secret");
+
         String authorization_endpoint = bundle
                 .getString("authorization_endpoint");
         String token_endpoint = bundle.getString("token_endpoint");
+
         String userinfo_endpoint = bundle.getString("userinfo_endpoint");
+        String jwks_uri = bundle.getString("jwks_uri");
 
         String authorizationCode = request
                 .getParameter(PARAM_AUTHORIZATION_CODE);
@@ -105,7 +103,7 @@ public class RedirectServlet extends HttpServlet {
 
             String nonce = getRandomString();
             String response_type = "code";
-            String scope = "openid+profile+email";
+            String scope =  getScope();
 
             String oauth_server_url = String.format(oauth_server_url_format,
                     client_id, //
@@ -131,13 +129,16 @@ public class RedirectServlet extends HttpServlet {
             // CSRF対策のための、パラメタから取得したヤツと、Sessionにあるヤツの値を確認
             checkCSRF(request);
 
+            Client client = Utils
+                    .createSecureClient("http://client.example.com:8888");
             String result = getAccessTokenJSON(token_endpoint, redirect_url,
-                    client_id, client_secret, authorizationCode);
+                    client_id, client_secret, authorizationCode, client);
 
             try {
-
                 Map<String, Object> map = json2Map(result);
-                String accessToken = (String) map.get("access_token");
+                String key = getAccess_token_key();
+
+                String accessToken = (String) map.get(key);
                 String id_token = (String) map.get("id_token");
 
                 log.debug("access_token: {}", accessToken);
@@ -153,10 +154,13 @@ public class RedirectServlet extends HttpServlet {
                 // OpenID Connect対応でないと、id_tokenが返ってこない場合もある。
                 if (StringUtils.isNotEmpty(id_token)) {
                     printIdToken(id_token, out);
-                    checkIdToken(id_token);
+                    boolean checkResult = checkIdToken(id_token, jwks_uri,
+                            client_secret);
+                    out.append("署名検証結果: " + checkResult);
                 }
+                out.append("\n\n");
 
-                // OAuth2.0のみのアプリだと、明確にuserinfo_endpointがない場合もありそう
+                // 基本このチェック不要だけど、一応入れてる。(OpenID Connectでない場合はもしかしたら独自仕様の場合アリ)
                 if (StringUtils.isNotEmpty(userinfo_endpoint)) {
                     log.debug("Userinfo Endpoint Server:{}", userinfo_endpoint);
                     String userInfoJSON = getResource(userinfo_endpoint,
@@ -169,6 +173,53 @@ public class RedirectServlet extends HttpServlet {
                 throw new ServletException(e);
             }
         }
+    }
+
+    private String getScope() {
+        String scope = bundle.getString("scope");
+        return StringUtils.isNotEmpty(scope) ? scope : "openid+profile+email";
+    }
+
+    private String getAccess_token_key() {
+        String access_token_key = bundle.getString("access_token_key"); // OAuthだとaccess_tokenだけど、一部のプロダクトがちがう仕様なので、可変に。
+        return StringUtils.isNotEmpty(access_token_key) ? access_token_key
+                : "access_token";
+    }
+
+    /**
+     * はじめ、getRequestURL(request) ってやるだけだったけど、プロトコルがHTTPS → HTTPになったり
+     * 直接指定したいケースが出てきたので設定すればその値になるように処理を追加した。
+     * 
+     * @param request
+     * @return
+     */
+    private String getRedirect_url(HttpServletRequest request) {
+        String redirect_url = bundle.getString("redirect_url");
+        if (StringUtils.isNotEmpty(redirect_url)) {
+            return redirect_url;
+        }
+        return getRequestURL(request);
+    }
+
+    private String getAccessTokenJSON(String token_endpoint,
+            String redirect_url, String client_id, String client_secret,
+            String authorizationCode, Client client) throws ServletException {
+        String result = null;
+
+        //////////////////////// 適当コード
+        /// mediaTypeが取れたらそれで投げる。取れなかったらデフォルトで投げる、がキレイ。
+        String mediaType = bundle.getString("media_type");
+
+        // QiitaだけJSONで投げないとContent-Typeチェックでエラーになる。なぜか。
+        if (StringUtils.equals(mediaType, MediaType.APPLICATION_JSON)) {
+            result = Utils.getAccessTokenJSON(token_endpoint, redirect_url,
+                    client_id, client_secret, authorizationCode, client,
+                    MediaType.APPLICATION_JSON_TYPE);
+        } else {
+            result = Utils.getAccessTokenJSON(token_endpoint, redirect_url,
+                    client_id, client_secret, authorizationCode, client);
+        }
+        return result;
     }
 
     private void printIdToken(String id_token, PrintWriter out)
