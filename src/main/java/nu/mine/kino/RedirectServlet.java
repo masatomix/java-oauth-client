@@ -96,6 +96,9 @@ public class RedirectServlet extends HttpServlet {
                     + "state=%3$s&" //
                     + "nonce=%4$s&" //
                     + "response_type=%5$s&"//
+                    // + "prompt=login+consent&"//
+                    // + "prompt=select_account&"//
+                    // + "display=popup&"//
                     + "scope=%6$s";
 
             // CSRF対策のための、stateを設定
@@ -103,7 +106,7 @@ public class RedirectServlet extends HttpServlet {
 
             String nonce = getRandomString();
             String response_type = "code";
-            String scope =  getScope();
+            String scope = getScope();
 
             String oauth_server_url = String.format(oauth_server_url_format,
                     client_id, //
@@ -164,7 +167,7 @@ public class RedirectServlet extends HttpServlet {
                 if (StringUtils.isNotEmpty(userinfo_endpoint)) {
                     log.debug("Userinfo Endpoint Server:{}", userinfo_endpoint);
                     String userInfoJSON = getResource(userinfo_endpoint,
-                            accessToken);
+                            accessToken, client);
                     out.append("User Information: \n");
                     out.append(toPrettyStr(json2Map(userInfoJSON)));
                 }
