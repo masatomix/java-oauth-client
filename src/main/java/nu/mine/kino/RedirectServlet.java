@@ -132,10 +132,10 @@ public class RedirectServlet extends HttpServlet {
             // CSRF対策のための、パラメタから取得したヤツと、Sessionにあるヤツの値を確認
             checkCSRF(request);
 
-            Client client = Utils
-                    .createSecureClient("http://client.example.com:8888");
+            String proxy = "http://client.example.com:8888";
             String result = getAccessTokenJSON(token_endpoint, redirect_url,
-                    client_id, client_secret, authorizationCode, client);
+                    client_id, client_secret, authorizationCode,
+                    Utils.createSecureClient(proxy));
 
             try {
                 Map<String, Object> map = json2Map(result);
@@ -167,15 +167,50 @@ public class RedirectServlet extends HttpServlet {
                 if (StringUtils.isNotEmpty(userinfo_endpoint)) {
                     log.debug("Userinfo Endpoint Server:{}", userinfo_endpoint);
                     String userInfoJSON = getResource(userinfo_endpoint,
-                            accessToken, client);
+                            accessToken, Utils.createSecureClient(proxy));
                     out.append("User Information: \n");
                     out.append(toPrettyStr(json2Map(userInfoJSON)));
+                }
+
+                // String introspection_endpoint =
+                // "http://oauth.example.com:8880/api/introspection";
+                // String introspection =
+                // getIntrospection(introspection_endpoint,
+                // accessToken, Utils.createSecureClient(proxy));
+                // log.debug("introspection: {}", introspection);
+
+                String sample_endpoint = getSampleEndpoint();
+                if (StringUtils.isNotEmpty(sample_endpoint)) {
+                    log.debug("Sample Endpoint: {}", sample_endpoint);
+                    String sampleData = getResource(sample_endpoint,
+                            accessToken, Utils.createSecureClient(proxy));
+                    log.debug("Sample Data: {}", sampleData);
                 }
 
             } catch (BadRequestException e) {
                 throw new ServletException(e);
             }
         }
+    }
+
+    // private static String getIntrospection(String introspection_endpoint,
+    // String accessToken, Client client) {
+    // MultivaluedMap<String, String> formParams = new
+    // MultivaluedHashMap<String, String>();
+    // formParams.putSingle("token", accessToken);
+    // formParams.putSingle("token_type_hint", "access_token");
+    //
+    // Response restResponse = client.target(introspection_endpoint)
+    // .request(MediaType.APPLICATION_JSON_TYPE)
+    // .post(Entity.entity(formParams,
+    // MediaType.APPLICATION_FORM_URLENCODED_TYPE));
+    //
+    // return restResponse.readEntity(String.class);
+    // }
+
+    private String getSampleEndpoint() {
+        String sample_endpoint = bundle.getString("sample_endpoint"); // OAuthだとaccess_tokenだけど、一部のプロダクトがちがう仕様なので、可変に。
+        return StringUtils.isNotEmpty(sample_endpoint) ? sample_endpoint : "";
     }
 
     private String getScope() {
@@ -209,15 +244,13 @@ public class RedirectServlet extends HttpServlet {
             String authorizationCode, Client client) throws ServletException {
         String result = null;
 
-        //////////////////////// 適当コード
-        /// mediaTypeが取れたらそれで投げる。取れなかったらデフォルトで投げる、がキレイ。
         String mediaType = bundle.getString("media_type");
 
         // QiitaだけJSONで投げないとContent-Typeチェックでエラーになる。なぜか。
-        if (StringUtils.equals(mediaType, MediaType.APPLICATION_JSON)) {
+        if (StringUtils.isNotEmpty(mediaType)) {
             result = Utils.getAccessTokenJSON(token_endpoint, redirect_url,
                     client_id, client_secret, authorizationCode, client,
-                    MediaType.APPLICATION_JSON_TYPE);
+                    MediaType.valueOf(mediaType));
         } else {
             result = Utils.getAccessTokenJSON(token_endpoint, redirect_url,
                     client_id, client_secret, authorizationCode, client);
