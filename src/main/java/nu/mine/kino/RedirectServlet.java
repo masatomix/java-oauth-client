@@ -230,8 +230,8 @@ public class RedirectServlet extends HttpServlet {
 
         String[] id_token_parts = id_token.split("\\.");
 
-        String ID_TOKEN_HEADER = base64DecodeStr(id_token_parts[0]);
-        String ID_TOKEN_PAYLOAD = base64DecodeStr(id_token_parts[1]);
+        String ID_TOKEN_HEADER = decodeBase64String(id_token_parts[0]);
+        String ID_TOKEN_PAYLOAD = decodeBase64String(id_token_parts[1]);
         // String ID_TOKEN_SIGNATURE =
         // base64DecodeStr(id_token_parts[2]);
         log.debug("ID_TOKEN_HEADER: {}", ID_TOKEN_HEADER);
