@@ -44,7 +44,7 @@
 		<dependency>
 			<groupId>nu.mine.kino</groupId>
 			<artifactId>utils</artifactId>
-			<version>0.1.5</version>
+			<version>0.1.7</version>
 		</dependency>
 
 		<dependency>
