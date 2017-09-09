@@ -209,7 +209,7 @@ public class RedirectServlet extends HttpServlet {
     // }
 
     private String getSampleEndpoint() {
-        String sample_endpoint = bundle.getString("sample_endpoint"); // OAuthだとaccess_tokenだけど、一部のプロダクトがちがう仕様なので、可変に。
+        String sample_endpoint = bundle.getString("sample_endpoint"); 
         return StringUtils.isNotEmpty(sample_endpoint) ? sample_endpoint : "";
     }
 
@@ -219,7 +219,7 @@ public class RedirectServlet extends HttpServlet {
     }
 
     private String getAccess_token_key() {
-        String access_token_key = bundle.getString("access_token_key"); // OAuthだとaccess_tokenだけど、一部のプロダクトがちがう仕様なので、可変に。
+        String access_token_key = bundle.getString("access_token_key"); // OAuthだと「access_token」だけど、一部のプロダクトがちがう仕様なので、可変に。
         return StringUtils.isNotEmpty(access_token_key) ? access_token_key
                 : "access_token";
     }
