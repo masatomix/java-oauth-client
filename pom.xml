@@ -9,27 +9,6 @@
 	<name>Java OAuth Client Sample WebApp</name>
 	<url>https://github.com/masatomix/java-oauth-client</url>
 
-	<licenses>
-		<license>
-			<name>The Apache Software License, Version 2.0</name>
-			<url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
-		</license>
-	</licenses>
-
-	<developers>
-		<developer>
-			<email>masatomix@ki-no.org</email>
-			<name>Masatomi KINO</name>
-			<url>https://github.com/masatomix</url>
-			<id>masatomix</id>
-		</developer>
-	</developers>
-	<scm>
-		<url>https://github.com/masatomix/utils</url>
-		<connection>scm:git:https://github.com/masatomix/java-oauth-client.git</connection>
-		<developerConnection>scm:git:https://github.com/masatomix/java-oauth-client.git</developerConnection>
-	</scm>
-
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<javax.servlet-api.version>3.1.0</javax.servlet-api.version>
@@ -41,12 +20,6 @@
 	</properties>
 
 	<dependencies>
-		<dependency>
-			<groupId>nu.mine.kino</groupId>
-			<artifactId>utils</artifactId>
-			<version>0.1.7</version>
-		</dependency>
-
 		<dependency>
 			<groupId>javax.servlet</groupId>
 			<artifactId>javax.servlet-api</artifactId>
@@ -64,6 +37,24 @@
 			<artifactId>logback-classic</artifactId>
 			<version>1.1.3</version>
 		</dependency>
+		<dependency>
+			<groupId>org.glassfish.jersey.core</groupId>
+			<artifactId>jersey-client</artifactId>
+			<version>${jersey.version}</version>
+		</dependency>
+		<!-- jersyでProxyを使う場合。 -->
+		<dependency>
+			<groupId>org.glassfish.jersey.connectors</groupId>
+			<artifactId>jersey-apache-connector</artifactId>
+			<version>${jersey.version}</version>
+		</dependency>
+		<!-- jersyでJavaBeansをJSON でPOSTする場合。 -->
+		<dependency>
+			<groupId>org.glassfish.jersey.media</groupId>
+			<artifactId>jersey-media-json-jackson</artifactId>
+			<version>${jersey.version}</version>
+		</dependency>
+
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>
@@ -115,17 +106,14 @@
 			<artifactId>jackson-annotations</artifactId>
 			<version>2.7.4</version>
 		</dependency>
+
+		<dependency>
+			<groupId>com.nimbusds</groupId>
+			<artifactId>nimbus-jose-jwt</artifactId>
+			<version>4.23</version>
+		</dependency>
+
 	</dependencies>
-	<repositories>
-		<repository>
-			<snapshots>
-				<enabled>true</enabled>
-				<updatePolicy>always</updatePolicy>
-			</snapshots>
-			<id>my-maven-repo</id>
-			<url>https://raw.github.com/masatomix/maven-repo/maven-repo/</url>
-		</repository>
-	</repositories>
 	<build>
 		<plugins>
 			<plugin>
@@ -160,7 +148,7 @@
 						<webInfIncludeJarPattern>.*/.*jersey-[^/]\.jar$</webInfIncludeJarPattern>
 					</webApp>
 					<httpConnector>
-						<port>8080</port>
+						<port>8082</port>
 					</httpConnector>
 					<stopPort>9092</stopPort>
 					<stopKey>stop</stopKey>
@@ -182,16 +170,6 @@
 					</execution>
 				</executions>
 			</plugin>
-			<plugin>
-				<groupId>com.amashchenko.maven.plugin</groupId>
-				<artifactId>gitflow-maven-plugin</artifactId>
-				<version>1.5.0</version>
-				<configuration>
-					<pushRemote>false</pushRemote>
-					<!-- optional configuration -->
-				</configuration>
-			</plugin>
-
 		</plugins>
 	</build>
 
