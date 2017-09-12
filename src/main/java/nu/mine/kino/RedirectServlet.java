@@ -288,12 +288,6 @@ public class RedirectServlet extends HttpServlet {
         String keyID = decodeObject.getHeader().getKeyID();
         log.debug("KeyID: {}", keyID);
 
-        // ちなみにGoogleは
-        // http://qiita.com/trysmr/items/e8d4225ff6a603e9e21a によると
-        // https://www.googleapis.com/oauth2/v3/certs
-        // ちなみにAuthleteは
-        // https://[サーバ名]/api/jwks
-        // だがデフォルトだとかえんないっぽい。設定しないとかな。
         RSAKey rsaKey = getRSAKey(jwks_uri, keyID);
         JWSVerifier verifier = new RSASSAVerifier(rsaKey);
         boolean verify = decodeObject.verify(verifier);
@@ -303,7 +297,6 @@ public class RedirectServlet extends HttpServlet {
 
     private boolean checkIdToken(String id_token, String jwks_uri,
             String secret) throws ServletException {
-        // ココ手動でクチャクチャやってるけど、Nimbusを使って書き換え。
         // String[] id_token_parts = id_token.split("\\.");
         //
         // String ID_TOKEN_HEADER = base64DecodeStr(id_token_parts[0]);
@@ -333,7 +326,7 @@ public class RedirectServlet extends HttpServlet {
 
             if (algorithm.getName().startsWith("HS")) {
                 log.debug("共通鍵({})", algorithm.getName());
-                byte[] sharedSecret = secret.getBytes(); // バイト列に変換
+                byte[] sharedSecret = secret.getBytes(); 
                 return checkHSSignature(decodeObject, sharedSecret);
             } else {
                 log.debug("公開鍵({})", algorithm.getName());
