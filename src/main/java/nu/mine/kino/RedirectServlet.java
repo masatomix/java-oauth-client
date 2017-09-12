@@ -43,7 +43,6 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class RedirectServlet extends HttpServlet {
-    private static final String PARAM_AUTHORIZATION_CODE = "code";
 
     protected void doGet(HttpServletRequest request,
             HttpServletResponse response) throws ServletException, IOException {
@@ -60,8 +59,7 @@ public class RedirectServlet extends HttpServlet {
         String userinfo_endpoint = bundle.getString("userinfo_endpoint");
         String jwks_uri = bundle.getString("jwks_uri");
 
-        String authorizationCode = request
-                .getParameter(PARAM_AUTHORIZATION_CODE);
+        String authorizationCode = request.getParameter("code");
 
         if (authorizationCode == null) {
             // Authorization Codeの取得開始。
@@ -103,7 +101,7 @@ public class RedirectServlet extends HttpServlet {
             // CSRF対策のための、パラメタから取得したヤツと、Sessionにあるヤツの値を確認
             // checkCSRF(request);
 
-            String result = getAccessTokenJSON(token_endpoint, redirect_url,
+            String result = getAccessToken(token_endpoint, redirect_url,
                     client_id, client_secret, authorizationCode);
 
             try {
@@ -128,13 +126,13 @@ public class RedirectServlet extends HttpServlet {
                     out.append("署名検証結果: " + checkResult);
                 }
                 out.append("\n\n");
-
                 {
                     log.debug("Userinfo Endpoint Server:{}", userinfo_endpoint);
                     String userInfoJSON = getResource(userinfo_endpoint,
                             accessToken);
                     out.append("User Information: \n");
                     out.append(toPrettyStr(json2Map(userInfoJSON)));
+                    out.append("\n\n");
                 }
                 {
                     String sample_endpoint = bundle
@@ -143,6 +141,15 @@ public class RedirectServlet extends HttpServlet {
                     String sampleData = getResource(sample_endpoint,
                             accessToken);
                     log.debug("Sample Data: {}", sampleData);
+
+                    out.append("Resource Server Result: \n");
+                    String curl = String.format(
+                            "curl %s -H \"Authorization: Bearer %s\" -G",
+                            sample_endpoint, accessToken);
+
+                    out.append(curl + "\n");
+                    out.append("とおなじ。\n");
+                    out.append(toPrettyStr(json2Map(sampleData)));
                 }
             } catch (BadRequestException e) {
                 throw new ServletException(e);
@@ -150,74 +157,6 @@ public class RedirectServlet extends HttpServlet {
         }
     }
 
-<<<<<<< HEAD
-    // private static String getIntrospection(String introspection_endpoint,
-    // String accessToken, Client client) {
-    // MultivaluedMap<String, String> formParams = new
-    // MultivaluedHashMap<String, String>();
-    // formParams.putSingle("token", accessToken);
-    // formParams.putSingle("token_type_hint", "access_token");
-    //
-    // Response restResponse = client.target(introspection_endpoint)
-    // .request(MediaType.APPLICATION_JSON_TYPE)
-    // .post(Entity.entity(formParams,
-    // MediaType.APPLICATION_FORM_URLENCODED_TYPE));
-    //
-    // return restResponse.readEntity(String.class);
-    // }
-
-    private String getSampleEndpoint() {
-        String sample_endpoint = bundle.getString("sample_endpoint"); 
-        return StringUtils.isNotEmpty(sample_endpoint) ? sample_endpoint : "";
-    }
-
-    private String getScope() {
-        String scope = bundle.getString("scope");
-        return StringUtils.isNotEmpty(scope) ? scope : "openid+profile+email";
-    }
-
-    private String getAccess_token_key() {
-        String access_token_key = bundle.getString("access_token_key"); // OAuthだと「access_token」だけど、一部のプロダクトがちがう仕様なので、可変に。
-        return StringUtils.isNotEmpty(access_token_key) ? access_token_key
-                : "access_token";
-    }
-
-    /**
-     * はじめ、getRequestURL(request) ってやるだけだったけど、プロトコルがHTTPS → HTTPになったり
-     * 直接指定したいケースが出てきたので設定すればその値になるように処理を追加した。
-     * 
-     * @param request
-     * @return
-     */
-    private String getRedirect_url(HttpServletRequest request) {
-        String redirect_url = bundle.getString("redirect_url");
-        if (StringUtils.isNotEmpty(redirect_url)) {
-            return redirect_url;
-        }
-        return getRequestURL(request);
-    }
-
-    private String getAccessTokenJSON(String token_endpoint,
-            String redirect_url, String client_id, String client_secret,
-            String authorizationCode, Client client) throws ServletException {
-        String result = null;
-
-        String mediaType = bundle.getString("media_type");
-
-        // QiitaだけJSONで投げないとContent-Typeチェックでエラーになる。なぜか。
-        if (StringUtils.isNotEmpty(mediaType)) {
-            result = Utils.getAccessTokenJSON(token_endpoint, redirect_url,
-                    client_id, client_secret, authorizationCode, client,
-                    MediaType.valueOf(mediaType));
-        } else {
-            result = Utils.getAccessTokenJSON(token_endpoint, redirect_url,
-                    client_id, client_secret, authorizationCode, client);
-        }
-        return result;
-    }
-
-=======
->>>>>>> feature/forQiita_spike
     private void printIdToken(String id_token, PrintWriter out)
             throws JsonProcessingException, IOException {
 
@@ -249,36 +188,7 @@ public class RedirectServlet extends HttpServlet {
      */
     protected void doPost(HttpServletRequest request,
             HttpServletResponse response) throws ServletException, IOException {
-        // TODO Auto-generated method stub
         doGet(request, response);
-    }
-
-    private ResourceBundle bundle = null;
-
-    @Override
-    public void init(ServletConfig config) throws ServletException {
-        super.init(config);
-        String propertyFile = getServletConfig().getInitParameter("property");
-        try {
-            bundle = ResourceBundle.getBundle(propertyFile);
-            doSettings(bundle);
-        } catch (java.util.MissingResourceException e) {
-            String message = "設定ファイルが存在しません。クラスパス上に {}.propertiesを配置してください。({})";
-            log.error(message, propertyFile, e.getMessage());
-            throw new ServletException(e);
-        }
-    }
-
-    private void doSettings(ResourceBundle bundle) {
-        Enumeration<String> keys = bundle.getKeys();
-        while (keys.hasMoreElements()) {
-            String key = keys.nextElement();
-            log.debug("key[{}]:{}", key, bundle.getString(key));
-        }
-    }
-
-    private static String getRandomString() {
-        return RandomStringUtils.randomAlphanumeric(40);
     }
 
     /**
@@ -287,7 +197,7 @@ public class RedirectServlet extends HttpServlet {
      * @param restResponse
      * @throws ServletException
      */
-    private static void checkAccessTokenResult(Response restResponse)
+    private void checkAccessTokenResult(Response restResponse)
             throws ServletException {
         StatusType statusInfo = restResponse.getStatusInfo();
         switch (statusInfo.getFamily()) {
@@ -303,13 +213,7 @@ public class RedirectServlet extends HttpServlet {
     }
 
     /**
-     * AccessToken取得のためのMapを作成する。Qiitaだけ、
-     * 
-     * <pre>
-     * Content-Type: application/x-www-form-urlencoded
-     * </pre>
-     * 
-     * を受け付けないので、パラメタ生成の処理を分けている。
+     * AccessToken取得のためのMapを作成する。
      * 
      * @param redirect_url
      * @param client_id
@@ -319,9 +223,8 @@ public class RedirectServlet extends HttpServlet {
      * @param mediaType
      * @return
      */
-    private static Map<String, ?> createMap(String redirect_url,
-            String client_id, String client_secret, String authorizationCode,
-            Client client) {
+    private Map<String, ?> createMap(String redirect_url, String client_id,
+            String client_secret, String authorizationCode, Client client) {
 
         String grant_type = "authorization_code";
         MultivaluedMap<String, String> formParams = new MultivaluedHashMap<String, String>();
@@ -335,9 +238,9 @@ public class RedirectServlet extends HttpServlet {
 
     }
 
-    private static String getAccessTokenJSON(String oauth_server,
-            String redirect_url, String client_id, String client_secret,
-            String authorizationCode) throws ServletException {
+    private String getAccessToken(String oauth_server, String redirect_url,
+            String client_id, String client_secret, String authorizationCode)
+            throws ServletException {
         String result = null;
 
         Client client = ClientBuilder.newClient();
@@ -359,7 +262,7 @@ public class RedirectServlet extends HttpServlet {
 
     }
 
-    private static String getResource(String target, String accessToken) {
+    private String getResource(String target, String accessToken) {
         Client client = ClientBuilder.newClient();
         Response restResponse = client.target(target)
                 .queryParam("schema", "openid")//
@@ -371,7 +274,7 @@ public class RedirectServlet extends HttpServlet {
         return result;
     }
 
-    private static boolean checkHSSignature(SignedJWT decodeObject,
+    private boolean checkHSSignature(SignedJWT decodeObject,
             byte[] sharedSecret) throws JOSEException {
         JWSVerifier verifier = new MACVerifier(sharedSecret);
         boolean verify = decodeObject.verify(verifier);
@@ -379,8 +282,8 @@ public class RedirectServlet extends HttpServlet {
         return verify;
     }
 
-    private static boolean checkRSSignature(SignedJWT decodeObject,
-            String jwks_uri) throws JOSEException, IOException, ParseException {
+    private boolean checkRSSignature(SignedJWT decodeObject, String jwks_uri)
+            throws JOSEException, IOException, ParseException {
         // Headerから KeyIDを取得して、
         String keyID = decodeObject.getHeader().getKeyID();
         log.debug("KeyID: {}", keyID);
@@ -398,7 +301,7 @@ public class RedirectServlet extends HttpServlet {
         return verify;
     }
 
-    private static boolean checkIdToken(String id_token, String jwks_uri,
+    private boolean checkIdToken(String id_token, String jwks_uri,
             String secret) throws ServletException {
         // ココ手動でクチャクチャやってるけど、Nimbusを使って書き換え。
         // String[] id_token_parts = id_token.split("\\.");
@@ -446,6 +349,34 @@ public class RedirectServlet extends HttpServlet {
         }
         return false;
 
+    }
+
+    private ResourceBundle bundle = null;
+
+    @Override
+    public void init(ServletConfig config) throws ServletException {
+        super.init(config);
+        String propertyFile = getServletConfig().getInitParameter("property");
+        try {
+            bundle = ResourceBundle.getBundle(propertyFile);
+            doSettings(bundle);
+        } catch (java.util.MissingResourceException e) {
+            String message = "設定ファイルが存在しません。クラスパス上に {}.propertiesを配置してください。({})";
+            log.error(message, propertyFile, e.getMessage());
+            throw new ServletException(e);
+        }
+    }
+
+    private void doSettings(ResourceBundle bundle) {
+        Enumeration<String> keys = bundle.getKeys();
+        while (keys.hasMoreElements()) {
+            String key = keys.nextElement();
+            log.debug("key[{}]:{}", key, bundle.getString(key));
+        }
+    }
+
+    private String getRandomString() {
+        return RandomStringUtils.randomAlphanumeric(40);
     }
 
     private static final long serialVersionUID = -4054957515370180691L;
