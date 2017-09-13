@@ -115,45 +115,52 @@ public class RedirectServlet extends HttpServlet {
 
                 response.setContentType("text/plain;charset=UTF-8");
                 PrintWriter out = response.getWriter();
-                out.append("AccessToken: \n");
-                out.append(toPrettyStr(map));
-                out.append("\n\n");
+
+                printDataFromResourceServer(accessToken, out);
 
                 {
-                    printIdToken(id_token, out);
+                    out.append("AccessToken: \n");
+                    out.append(toPrettyStr(map));
+                    out.append("\n\n");
+                }
+                printIdToken(id_token, out);
+                {
                     boolean checkResult = checkIdToken(id_token, jwks_uri,
                             client_secret);
                     out.append("署名検証結果: " + checkResult);
-                }
-                out.append("\n\n");
-                {
-                    log.debug("Userinfo Endpoint Server:{}", userinfo_endpoint);
-                    String userInfoJSON = getResource(userinfo_endpoint,
-                            accessToken);
-                    out.append("User Information: \n");
-                    out.append(toPrettyStr(json2Map(userInfoJSON)));
                     out.append("\n\n");
                 }
                 {
-                    String sample_endpoint = bundle
-                            .getString("sample_endpoint");
-                    log.debug("Sample Endpoint: {}", sample_endpoint);
-                    String sampleData = getResource(sample_endpoint,
+                    out.append("User Information: \n");
+                    log.debug("Userinfo Endpoint Server:{}", userinfo_endpoint);
+                    String userInfoJSON = getResource(userinfo_endpoint,
                             accessToken);
-                    log.debug("Sample Data: {}", sampleData);
-
-                    out.append("Resource Server Result: \n");
-                    String curl = String.format(
-                            "curl %s -H \"Authorization: Bearer %s\" -G",
-                            sample_endpoint, accessToken);
-
-                    out.append(curl + "\n");
-                    out.append("とおなじ。\n");
-                    out.append(toPrettyStr(json2Map(sampleData)));
+                    out.append(toPrettyStr(json2Map(userInfoJSON)));
+                    out.append("\n\n");
                 }
             } catch (BadRequestException e) {
                 throw new ServletException(e);
             }
+        }
+    }
+
+    private void printDataFromResourceServer(String accessToken,
+            PrintWriter out) throws JsonProcessingException, IOException {
+        {
+            String sample_endpoint = bundle.getString("sample_endpoint");
+            log.debug("Sample Endpoint: {}", sample_endpoint);
+            String sampleData = getResource(sample_endpoint, accessToken);
+            log.debug("Sample Data: {}", sampleData);
+
+            out.append("Resource Server Result: \n");
+            String curl = String.format(
+                    "curl %s -H \"Authorization: Bearer %s\" -G",
+                    sample_endpoint, accessToken);
+
+            out.append(curl + "\n");
+            out.append("とおなじ。\n");
+            out.append(toPrettyStr(json2Map(sampleData)));
+            out.append("\n\n");
         }
     }
 
@@ -326,7 +333,7 @@ public class RedirectServlet extends HttpServlet {
 
             if (algorithm.getName().startsWith("HS")) {
                 log.debug("共通鍵({})", algorithm.getName());
-                byte[] sharedSecret = secret.getBytes(); 
+                byte[] sharedSecret = secret.getBytes();
                 return checkHSSignature(decodeObject, sharedSecret);
             } else {
                 log.debug("公開鍵({})", algorithm.getName());
