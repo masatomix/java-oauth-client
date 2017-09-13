@@ -117,7 +117,6 @@ public class RedirectServlet extends HttpServlet {
                 PrintWriter out = response.getWriter();
 
                 printDataFromResourceServer(accessToken, out);
-
                 {
                     out.append("AccessToken: \n");
                     out.append(toPrettyStr(map));
@@ -146,22 +145,20 @@ public class RedirectServlet extends HttpServlet {
 
     private void printDataFromResourceServer(String accessToken,
             PrintWriter out) throws JsonProcessingException, IOException {
-        {
-            String sample_endpoint = bundle.getString("sample_endpoint");
-            log.debug("Sample Endpoint: {}", sample_endpoint);
-            String sampleData = getResource(sample_endpoint, accessToken);
-            log.debug("Sample Data: {}", sampleData);
+        String sample_endpoint = bundle.getString("sample_endpoint");
+        log.debug("Sample Endpoint: {}", sample_endpoint);
+        String sampleData = getResource(sample_endpoint, accessToken);
+        log.debug("Sample Data: {}", sampleData);
 
-            out.append("Resource Server Result: \n");
-            String curl = String.format(
-                    "curl %s -H \"Authorization: Bearer %s\" -G",
-                    sample_endpoint, accessToken);
+        out.append("Resource Server Result: \n");
+        String curl = String.format(
+                "curl %s -H \"Authorization: Bearer %s\" -G", sample_endpoint,
+                accessToken);
 
-            out.append(curl + "\n");
-            out.append("とおなじ。\n");
-            out.append(toPrettyStr(json2Map(sampleData)));
-            out.append("\n\n");
-        }
+        out.append(curl + "\n");
+        out.append("とおなじ。\n");
+        out.append(toPrettyStr(json2Map(sampleData)));
+        out.append("\n\n");
     }
 
     private void printIdToken(String id_token, PrintWriter out)
