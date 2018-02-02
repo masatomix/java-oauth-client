@@ -61,6 +61,14 @@ public class RedirectServlet extends HttpServlet {
 
         String authorizationCode = request.getParameter("code");
 
+        if (request.getParameter("error") != null) {
+            response.setContentType("text/plain;charset=UTF-8");
+            PrintWriter out = response.getWriter();
+            out.append(request.getParameter("error") + "\n");
+            out.append(request.getParameter("error_uri") + "\n");
+            out.append(request.getParameter("error_description") + "\n");
+            return;
+        }
         if (authorizationCode == null) {
             // Authorization Codeの取得開始。
 
