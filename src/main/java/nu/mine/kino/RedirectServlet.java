@@ -9,6 +9,7 @@ import java.io.PrintWriter;
 import java.net.URLEncoder;
 import java.util.Enumeration;
 import java.util.Map;
+import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 
 import javax.servlet.ServletConfig;
@@ -26,7 +27,7 @@ import org.apache.commons.lang3.StringUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 import lombok.extern.slf4j.Slf4j;
-import nu.mine.kino.utils.Utils;;
+import nu.mine.kino.utils.Utils;
 
 /**
  * Servlet implementation class RedirectServlet
@@ -38,7 +39,10 @@ public class RedirectServlet extends HttpServlet {
 
     private ResourceBundle bundle = null;
 
+    private Map<String, Object> oidcConfig = null;
+
     private static final String PARAM_AUTHORIZATION_CODE = "code";
+
 
     @Override
     public void init(ServletConfig config) throws ServletException {
@@ -52,6 +56,20 @@ public class RedirectServlet extends HttpServlet {
             log.error(message, propertyFile, e.getMessage());
             throw new ServletException(e);
         }
+
+        String oidcConfigUrl = bundle.containsKey("discovery_endpoint")
+                ? bundle.getString("discovery_endpoint")
+                : null;
+        if (StringUtils.isNotEmpty(oidcConfigUrl)) {
+            try {
+                oidcConfig = Utils.getOpenIdConfiguration(oidcConfigUrl,
+                        Utils.createSecureClient());
+            } catch (IOException e) {
+                String message = "openid-configurationが取得できませんでした。({})";
+                log.error(message, oidcConfigUrl);
+                throw new ServletException(e);
+            }
+        }
     }
 
     private void doSettings(ResourceBundle bundle) {
@@ -60,6 +78,18 @@ public class RedirectServlet extends HttpServlet {
             String key = keys.nextElement();
             log.debug("key[{}]:{}", key, bundle.getString(key));
         }
+    }
+
+    /**
+     * Discovery Endpoint から取れる情報、もしくは propertiesファイルにある情報から、値を取り出す。
+     * propertiesファイル優先
+     * 
+     * @param key
+     * @return
+     */
+    private String getString(String key) {
+        return bundle.containsKey(key) ? bundle.getString(key)
+                : (String) oidcConfig.get(key);
     }
 
     /**
@@ -74,14 +104,12 @@ public class RedirectServlet extends HttpServlet {
         log.debug("redirect_url:[{}]", redirect_url);// ココでセットするURLは、通常OAuthサーバ側に登録されているURLでなければならない。
 
         String client_id = bundle.getString("client_id");
-        String client_secret = bundle.getString("client_secret");
 
-        String authorization_endpoint = bundle
-                .getString("authorization_endpoint");
-        String token_endpoint = bundle.getString("token_endpoint");
+        String authorization_endpoint = getString("authorization_endpoint");
+        String token_endpoint = getString("token_endpoint");
 
-        String userinfo_endpoint = bundle.getString("userinfo_endpoint");
-        String jwks_uri = bundle.getString("jwks_uri");
+        String userinfo_endpoint = getString("userinfo_endpoint");
+        String jwks_uri = getString("jwks_uri");
 
         String authorizationCode = request
                 .getParameter(PARAM_AUTHORIZATION_CODE);
@@ -93,9 +121,13 @@ public class RedirectServlet extends HttpServlet {
                     + "?" //
                     + "client_id=%1$s&" //
                     + "redirect_uri=%2$s&" //
+//                    + "response_mode=form_post&"//
                     + "state=%3$s&" //
                     + "nonce=%4$s&" //
                     + "response_type=%5$s&"//
+                    + "code_challenge=%7$s&"//
+                    + "code_challenge_method=S256&"//
+
                     // + "prompt=login+consent&"//
                     // + "prompt=select_account&"//
                     // + "display=popup&"//
@@ -105,8 +137,12 @@ public class RedirectServlet extends HttpServlet {
             String state = getRandomString();
 
             String nonce = getRandomString();
-            String response_type = "code";
-            String scope = getScope();
+            String code_verifier = getRandomString();
+            String code_challenge = sha256(code_verifier);
+
+            String response_type = URLEncoder.encode(getResponseType(),
+                    "UTF-8");
+            String scope = URLEncoder.encode(getScope(), "UTF-8");
 
             String oauth_server_url = String.format(oauth_server_url_format,
                     client_id, //
@@ -114,14 +150,17 @@ public class RedirectServlet extends HttpServlet {
                     state, //
                     nonce, //
                     response_type, //
-                    scope);
+                    scope, code_challenge);
             log.debug(oauth_server_url);
 
             HttpSession session = request.getSession(true);
             log.debug("はじめのsession id: {}", session.getId());
             log.debug("session state: {}", state);
+            log.debug("code_challenge: {}", code_challenge);
+            log.debug("code_verifier: {}", code_verifier);
             session.setAttribute(SESSION_STATE, state);
             session.setAttribute(SESSION_NONCE, nonce);
+            session.setAttribute(SESSION_CODE_VERIFIER, code_verifier);
 
             // OAuth Serverへリダイレクト
             response.sendRedirect(oauth_server_url);
@@ -131,10 +170,13 @@ public class RedirectServlet extends HttpServlet {
 
             // CSRF対策のための、パラメタから取得したヤツと、Sessionにあるヤツの値を確認
             checkCSRF(request);
+            String code_verifier = Utils.getCodeVerifier(request);
+            log.debug("code_verifier: {}", code_verifier);
 
             String proxy = "http://client.example.com:8888";
+            String client_secret = getClientSecret();
             String result = getAccessTokenJSON(token_endpoint, redirect_url,
-                    client_id, client_secret, authorizationCode,
+                    client_id, client_secret, authorizationCode, code_verifier,
                     Utils.createSecureClient(proxy));
 
             try {
@@ -208,14 +250,29 @@ public class RedirectServlet extends HttpServlet {
     // return restResponse.readEntity(String.class);
     // }
 
+    private String getClientSecret() {
+        String client_secret = bundle.getString("client_secret");
+        return StringUtils.isNotEmpty(client_secret) ? client_secret : "";
+    }
+
     private String getSampleEndpoint() {
-        String sample_endpoint = bundle.getString("sample_endpoint"); 
+        String sample_endpoint = bundle.getString("sample_endpoint");
         return StringUtils.isNotEmpty(sample_endpoint) ? sample_endpoint : "";
     }
 
     private String getScope() {
         String scope = bundle.getString("scope");
         return StringUtils.isNotEmpty(scope) ? scope : "openid+profile+email";
+    }
+
+    private String getResponseType() {
+        try {
+            String response_type = bundle.getString("response_type");
+            return StringUtils.isNotEmpty(response_type) ? response_type
+                    : "code";
+        } catch (MissingResourceException e) {
+        }
+        return "code";
     }
 
     private String getAccess_token_key() {
@@ -241,20 +298,35 @@ public class RedirectServlet extends HttpServlet {
 
     private String getAccessTokenJSON(String token_endpoint,
             String redirect_url, String client_id, String client_secret,
-            String authorizationCode, Client client) throws ServletException {
+            String authorizationCode, String code_verifier, Client client)
+            throws ServletException {
         String result = null;
 
         String mediaType = bundle.getString("media_type");
 
-        // QiitaだけJSONで投げないとContent-Typeチェックでエラーになる。なぜか。
-        if (StringUtils.isNotEmpty(mediaType)) {
-            result = Utils.getAccessTokenJSON(token_endpoint, redirect_url,
-                    client_id, client_secret, authorizationCode, client,
-                    MediaType.valueOf(mediaType));
+        if (StringUtils.isNotEmpty(client_secret)) {
+            // QiitaだけJSONで投げないとContent-Typeチェックでエラーになる。なぜか。
+            if (StringUtils.isNotEmpty(mediaType)) {
+                result = Utils.getAccessTokenJSON(token_endpoint, redirect_url,
+                        client_id, client_secret, authorizationCode, client,
+                        MediaType.valueOf(mediaType));
+            } else {
+                result = Utils.getAccessTokenJSON(token_endpoint, redirect_url,
+                        client_id, client_secret, authorizationCode, client);
+            }
         } else {
-            result = Utils.getAccessTokenJSON(token_endpoint, redirect_url,
-                    client_id, client_secret, authorizationCode, client);
+            // QiitaだけJSONで投げないとContent-Typeチェックでエラーになる。なぜか。
+            if (StringUtils.isNotEmpty(mediaType)) {
+                result = Utils.getAccessTokenJSONForPKCE(token_endpoint,
+                        redirect_url, client_id, authorizationCode,
+                        code_verifier, client, MediaType.valueOf(mediaType));
+            } else {
+                result = Utils.getAccessTokenJSONForPKCE(token_endpoint,
+                        redirect_url, client_id, authorizationCode,
+                        code_verifier, client);
+            }
         }
+
         return result;
     }
 

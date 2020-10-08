@@ -46,6 +46,7 @@
     <servlet-name>RedirectServlet3</servlet-name>
     <url-pattern>/RedirectServlet3</url-pattern>
   </servlet-mapping>
+  
 
   <servlet>
     <servlet-name>RedirectServlet4</servlet-name>
@@ -101,4 +102,17 @@
     <url-pattern>/RedirectServlet7</url-pattern>
   </servlet-mapping>
   
+  
+  <servlet>
+    <servlet-name>RedirectServlet8</servlet-name>
+    <servlet-class>nu.mine.kino.RedirectServlet</servlet-class>
+    <init-param>
+        <param-name>property</param-name>
+        <param-value>settings8</param-value>
+    </init-param>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>RedirectServlet8</servlet-name>
+    <url-pattern>/RedirectServlet8</url-pattern>
+  </servlet-mapping>
 </web-app>

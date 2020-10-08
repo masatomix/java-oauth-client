@@ -44,9 +44,8 @@
 		<dependency>
 			<groupId>nu.mine.kino</groupId>
 			<artifactId>utils</artifactId>
-			<version>0.1.7</version>
+			<version>0.1.9</version>
 		</dependency>
-
 		<dependency>
 			<groupId>javax.servlet</groupId>
 			<artifactId>javax.servlet-api</artifactId>
@@ -108,12 +107,12 @@
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
 			<artifactId>jackson-databind</artifactId>
-			<version>2.7.4</version>
+			<version>2.11.3</version>
 		</dependency>
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
 			<artifactId>jackson-annotations</artifactId>
-			<version>2.7.4</version>
+			<version>2.11.3</version>
 		</dependency>
 	</dependencies>
 	<repositories>
